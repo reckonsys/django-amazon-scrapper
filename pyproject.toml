@@ -6,9 +6,19 @@ authors = ["dhilipsiva <dhilipsiva@pm.me>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+django = "^3.0.6"
+requests = "^2.23.0"
+parsel = "^1.6.0"
+celery = "^4.4.2"
+orm_choices = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"
+ipython = "^7.14.0"
+neovim = "^0.3.1"
+ipdb = "^0.13.2"
+flake8 = "^3.7.9"
+isort = "^4.3.21"
 
 [build-system]
 requires = ["poetry>=0.12"]
