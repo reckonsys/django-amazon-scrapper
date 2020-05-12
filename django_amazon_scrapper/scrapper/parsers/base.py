@@ -1,5 +1,10 @@
 from re import compile
+from datetime import datetime
+
 from parsel.selector import Selector
+
+from django_amazon_scrapper.scrapper.config import (
+    MAX_ANSWER_PAGES, MAX_QUESTION_PAGES, MAX_REVIEW_PAGES)
 
 non_numeric = compile('[^0-9\.]+')  # noqa: W605
 
@@ -8,10 +13,17 @@ def rating_transform(text):
     return text.split(' ')[0]
 
 
+def date_transform(text):
+    return text.split(' on ')[1]
+
+
 class Parser:
 
-    def __init__(self, text):
-        self.selector = Selector(text)
+    def __init__(self, text_or_selector):
+        if isinstance(text_or_selector, str):
+            self.selector = Selector(text_or_selector)
+        else:
+            self.selector = text_or_selector
 
     def get_text(self, selector, transform=None):
         text = self.selector.css(f'{selector}::text').get()
@@ -35,6 +47,39 @@ class Parser:
             return 0.0
         text = non_numeric.sub('', text)
         return float(text)
+
+    def get_date(self, selector, transform=None):
+        text = self.get_text(selector, transform)
+        if text is None:
+            return None
+        return datetime.strptime(text, '%B %d, %Y').date()
+
+
+class ListMixin:
+    max_pages = 0
+    count_selector = ''
+
+    @property
+    def count_max(self):
+        return self.max_pages * 10
+
+    @property
+    def counter(self):
+        text = self.get_text(self.count_selector)
+        if text is None:
+            return 0, 0
+        text_split = text.split(' ')
+        if len(text_split) != 5:
+            return 0, 0
+        _, _range, _, total, _ = text_split
+        count_end = int(non_numeric.sub('', _range.split('-')[1]))
+        count_total = int(non_numeric.sub('', total))
+        return count_end, count_total
+
+    @property
+    def is_final(self):
+        end, total = self.counter
+        return end == total or end == self.count_max
 
 
 class ProductParser(Parser):
@@ -78,25 +123,49 @@ class ProfileParser(Parser):
 
 class ReviewParser(Parser):
 
+    sel_profile_name = '.a-profile-name'
+    sel_profile_id = '.a-profile'
+    sel_rating = '.review-rating span'
+    sel_text = '.review-text span'
+    sel_title = '.review-title span'
+    sel_date = '.review-date'
+
+    @property
+    def id(self):
+        return self.selector.attrib.get('id')
+
     @property
     def date(self):
-        pass
+        return self.get_date(self.sel_date, date_transform)
 
     @property
     def profile_id(self):
-        pass
+        return self.selector.css(self.sel_profile_id).attrib.get('href').split('/')[3]  # noqa: E501
+
+    @property
+    def profile_name(self):
+        return self.get_text(self.sel_profile_name)
 
     @property
     def rating(self):
-        pass
+        return self.get_float(self.sel_rating, rating_transform)
 
     @property
     def text(self):
-        pass
+        return self.get_text(self.sel_text)
 
     @property
     def title(self):
-        pass
+        return self.get_text(self.sel_title)
+
+
+class ReviewListParser(Parser, ListMixin):
+    max_pages = MAX_REVIEW_PAGES
+    count_selector = '#filter-info-section span'
+
+    @property
+    def reviews(self):
+        return [ReviewParser(selector) for selector in self.selector.css('.review')]  # noqa: E501
 
 
 class QuestionParser(Parser):
@@ -110,11 +179,20 @@ class QuestionParser(Parser):
         pass
 
     @property
-    def profile_id(self):
+    def profile(self):
         pass
 
     @property
     def text(self):
+        pass
+
+
+class QuestionListParser(Parser, ListMixin):
+    max_pages = MAX_QUESTION_PAGES
+    count_selector = '.a-section.askPaginationHeaderMessage span'
+
+    @property
+    def questions(self):
         pass
 
 
@@ -129,9 +207,18 @@ class AnswerParser(Parser):
         pass
 
     @property
-    def profile_id(self):
+    def profile(self):
         pass
 
     @property
     def text(self):
+        pass
+
+
+class AnswerListParser(Parser, ListMixin):
+    max_pages = MAX_ANSWER_PAGES
+    count_selector = '.a-spacing-large.a-color-secondary'
+
+    @property
+    def answers(self):
         pass

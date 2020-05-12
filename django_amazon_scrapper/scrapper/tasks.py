@@ -5,9 +5,11 @@ import requests
 from celery import current_app, shared_task
 
 from django_amazon_scrapper.scrapper.choices import ProductStatus, ScrapeStatus
-from django_amazon_scrapper.scrapper.config import SCRAPE_AMAZON_REGIONS, TASKS
+from django_amazon_scrapper.scrapper.config import (
+    MAX_ANSWER_PAGES, MAX_QUESTION_PAGES, MAX_REVIEW_PAGES,
+    SCRAPE_AMAZON_REGIONS, TASKS)
 from django_amazon_scrapper.scrapper.models import (
-    Asin, Product, Question, Scrape)
+    Answer, Asin, Product, Profile, Question, Review, Scrape)
 
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14'  # noqa: E501
 
@@ -82,7 +84,37 @@ def scrape_reviews(scrape_id):
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status_reviews = ScrapeStatus.SCRAPPING
     scrape.save()
-    print("SCRAPE URL", scrape.product.questions_url())
+    for page_number in range(1, MAX_REVIEW_PAGES):
+        url = scrape.product.reviews_url(page_number)
+        response = fetch(url)
+        if response.status_code != 200:
+            scrape.status_reviews = ScrapeStatus.FAILED
+            scrape.message_reviews = url
+            scrape.save()
+            return
+
+        parser = scrape.product.parser.ReviewListParser(response.text)
+
+        for review in parser.reviews:
+            if Review.objects.filter(id=review.id).exists():
+                scrape.status_reviews = ScrapeStatus.COMPLETED
+                scrape.save()
+                return
+
+            profile, _ = Profile.objects.get_or_create(id=review.profile_id)
+            profile.name = review.profile_name
+            profile.save()
+            scrape.product.reviews.create(
+                date=review.date, id=review.id, profile=profile,
+                rating=review.rating, text=review.text, title=review.title)
+
+        if parser.is_final:
+            scrape.status_reviews = ScrapeStatus.COMPLETED
+            scrape.save()
+            return
+
+    scrape.status_reviews = ScrapeStatus.COMPLETED
+    scrape.save()
 
 
 @shared_task
