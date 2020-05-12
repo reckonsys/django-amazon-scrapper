@@ -16,8 +16,7 @@ class ScrapeStatus:
         WAITING = (1, 'Waiting')
         SCRAPPING = (2, 'Scrapping')
         FAILED = (3, 'Failed')
-        NO_CHANGES = (4, 'No Changes')
-        UPDATED = (5, 'Updated')
+        COMPLETED = (4, 'Completed')
 
 
 @choices

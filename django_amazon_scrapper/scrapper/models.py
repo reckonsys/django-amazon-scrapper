@@ -71,9 +71,15 @@ class Product(BaseModel):
 
 class Scrape(BaseModel):
     id = UUIDField(default=uuid4, primary_key=True, editable=False)
+    message = CharField(max_length=200, null=True, blank=True)
+    message_answers = CharField(max_length=200, null=True, blank=True)
+    message_questions = CharField(max_length=200, null=True, blank=True)
+    message_reviews = CharField(max_length=200, null=True, blank=True)
     product = ForeignKey(Product, related_name='scrapes', on_delete=CASCADE)
     status = PositiveSmallIntegerField(choices=ScrapeStatus.CHOICES, default=ScrapeStatus.WAITING)  # noqa: E501
-    message = CharField(max_length=200, null=True, blank=True)
+    status_answers = PositiveSmallIntegerField(choices=ScrapeStatus.CHOICES, default=ScrapeStatus.WAITING)  # noqa: E501
+    status_questions = PositiveSmallIntegerField(choices=ScrapeStatus.CHOICES, default=ScrapeStatus.WAITING)  # noqa: E501
+    status_reviews = PositiveSmallIntegerField(choices=ScrapeStatus.CHOICES, default=ScrapeStatus.WAITING)  # noqa: E501
 
     def __str__(self):
         return f'[{self.get_status_display()}] {self.product}'

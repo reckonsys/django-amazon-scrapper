@@ -2,11 +2,12 @@
 from __future__ import absolute_import, unicode_literals
 
 import requests
-from celery import shared_task
+from celery import current_app, shared_task
 
 from django_amazon_scrapper.scrapper.choices import ProductStatus, ScrapeStatus
-from django_amazon_scrapper.scrapper.config import SCRAPE_AMAZON_REGIONS
-from django_amazon_scrapper.scrapper.models import Asin, Product, Scrape
+from django_amazon_scrapper.scrapper.config import SCRAPE_AMAZON_REGIONS, TASKS
+from django_amazon_scrapper.scrapper.models import (
+    Asin, Product, Question, Scrape)
 
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14'  # noqa: E501
 
@@ -68,4 +69,47 @@ def init_scrape(scrape_id):
     '''
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status = ScrapeStatus.SCRAPPING
+    scrape.save()
+    current_app.send_task(f'{TASKS}.scrape_reviews', (scrape_id, ))
+    current_app.send_task(f'{TASKS}.scrape_questions', (scrape_id, ))
+
+
+@shared_task
+def scrape_reviews(scrape_id):
+    '''
+    Scrape Reviews
+    '''
+    scrape = Scrape.objects.get(id=scrape_id)
+    scrape.status_reviews = ScrapeStatus.SCRAPPING
+    scrape.save()
+
+
+@shared_task
+def scrape_questions(scrape_id):
+    '''
+    Scrape Questions
+    '''
+    scrape = Scrape.objects.get(id=scrape_id)
+    scrape.status_questions = ScrapeStatus.SCRAPPING
+    scrape.save()
+    # current_app.send_task(f'{TASKS}.scrape_answers', (scrape_id, question.id))  # noqa: E501
+
+
+@shared_task
+def scrape_answers(scrape_id, question_id):
+    '''
+    Scrape Answers
+    '''
+    scrape = Scrape.objects.get(id=scrape_id)
+    scrape.status_answers = ScrapeStatus.SCRAPPING
+    scrape.save()
+    question = Question.objects.get(id=question_id)
+    print(question)
+    current_app.send_task(f'{TASKS}.scrape_completed', (scrape_id, ))
+
+
+@shared_task
+def scrape_completed(scrape_id):
+    scrape = Scrape.objects.get(id=scrape_id)
+    scrape.status = ScrapeStatus.COMPLETED
     scrape.save()

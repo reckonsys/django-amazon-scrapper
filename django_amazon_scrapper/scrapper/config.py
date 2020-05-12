@@ -2,6 +2,8 @@ from django.conf import settings
 
 from django_amazon_scrapper.scrapper.choices import AmazonRegion
 
+TASKS = 'django_amazon_scrapper.scrapper.tasks'
+
 if hasattr(settings, 'SCRAPE_AMAZON_REGIONS'):
     SCRAPE_AMAZON_REGIONS = settings.SCRAPE_AMAZON_REGIONS
 else:
