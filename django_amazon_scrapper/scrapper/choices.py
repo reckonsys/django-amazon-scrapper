@@ -5,8 +5,19 @@ from orm_choices import choices
 class ProductStatus:
     class Meta:
         NEWLY_ADDED = (1, 'Newly Added')
-        INVALID = (2, 'Invalid')
-        VALID = (3, 'Valid')
+        VALIDATING = (2, 'Validating')
+        INVALID = (3, 'Invalid')
+        VALID = (4, 'Valid')
+
+
+@choices
+class ScrapeStatus:
+    class Meta:
+        WAITING = (1, 'Waiting')
+        SCRAPPING = (2, 'Scrapping')
+        FAILED = (3, 'Failed')
+        NO_CHANGES = (4, 'No Changes')
+        UPDATED = (5, 'Updated')
 
 
 @choices
@@ -28,13 +39,3 @@ class AmazonRegion:
         AE = (14, 'Arab Emirates')
         UK = (15, 'United Kingdom')
         US = (16, 'United States')
-
-
-@choices
-class ScrapeStatus:
-    class Meta:
-        WAITING = (1, 'Waiting')
-        SCRAPPING = (2, 'Scrapping')
-        FAILED = (3, 'Failed')
-        CREATED = (4, 'Created')
-        UPDATED = (5, 'Updated')

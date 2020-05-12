@@ -7,7 +7,8 @@ from django.db.models import (
 
 from django_amazon_scrapper.scrapper.choices import (
     AmazonRegion, ProductStatus, ScrapeStatus)
-from django_amazon_scrapper.scrapper.utils import AMAZON_PREFIX, TLD_MAP
+from django_amazon_scrapper.scrapper.utils import (
+    AMAZON_PREFIX, PARSER_MAP, TLD_MAP)
 
 
 class BaseModel(Model):
@@ -32,18 +33,22 @@ class Asin(BaseModel):
 class Product(BaseModel):
     asin = ForeignKey(Asin, related_name='products', on_delete=CASCADE)
     id = UUIDField(default=uuid4, primary_key=True, editable=False)
-    name = CharField(max_length=5000)
     price = FloatField(default=0.0)
-    qna_count = IntegerField(default=0)
+    question_count = IntegerField(default=0)
     rating = FloatField(default=0.0)
-    rating_count = IntegerField(default=0)
     region = PositiveSmallIntegerField(choices=AmazonRegion.CHOICES, default=AmazonRegion.US)  # noqa: E501
+    review_count = IntegerField(default=0)
     status = PositiveSmallIntegerField(choices=ProductStatus.CHOICES, default=ProductStatus.NEWLY_ADDED)  # noqa: E501
+    title = CharField(max_length=5000)
 
     @property
     def prefix(self):
         tld = TLD_MAP[self.region]
         return f'{AMAZON_PREFIX}.{tld}'
+
+    @property
+    def parser(self):
+        return PARSER_MAP[self.region]
 
     def product_url(self):
         return f'{self.prefix}/dp/{self.asin_id}'
@@ -61,13 +66,14 @@ class Product(BaseModel):
         unique_together = ('asin', 'region')
 
     def __str__(self):
-        return f'[{self.asin}] {self.name} ({self.get_region_display()})'
+        return f'[{self.asin}] {self.title} ({self.get_region_display()})'
 
 
 class Scrape(BaseModel):
+    id = UUIDField(default=uuid4, primary_key=True, editable=False)
     product = ForeignKey(Product, related_name='scrapes', on_delete=CASCADE)
     status = PositiveSmallIntegerField(choices=ScrapeStatus.CHOICES, default=ScrapeStatus.WAITING)  # noqa: E501
-    message = CharField(max_length=200)
+    message = CharField(max_length=200, null=True, blank=True)
 
     def __str__(self):
         return f'[{self.get_status_display()}] {self.product}'
