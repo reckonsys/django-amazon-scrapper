@@ -33,11 +33,15 @@ def random_headers():
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',  # noqa: E501
     }
 '''
-headers = {
-    'User-Agent': UA,
-    'Host': 'www.amazon.com',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',  # noqa: E501
-}
+
+
+def fetch(url):
+    headers = {
+        'User-Agent': UA,
+        'Host': url.replace('https://', '').split('/')[0],
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',  # noqa: E501
+    }
+    return requests.get(url, headers=headers)
 
 
 @shared_task
@@ -48,7 +52,6 @@ def init_asin(asin_id):
     asin = Asin.objects.get(id=asin_id)
     for region in SCRAPE_AMAZON_REGIONS:
         asin.products.get_or_create(region=region)
-    print(f'echo asin: {asin}')
 
 
 @shared_task
@@ -59,11 +62,13 @@ def init_product(product_id):
     product = Product.objects.get(id=product_id)
     product.status = ProductStatus.VALIDATING
     product.save()
-    response = requests.get(product.product_url(), headers=headers)
+
+    response = fetch(product.product_url())
     if response.status_code != 200:
         product.status = ProductStatus.INVALID
         product.save()
         return
+
     product.status = ProductStatus.VALID
     parser = product.parser.ProductParser(response.text)
     product.price = parser.price
@@ -83,4 +88,3 @@ def init_scrape(scrape_id):
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status = ScrapeStatus.SCRAPPING
     scrape.save()
-    print(f'echo scrape: {scrape}')
