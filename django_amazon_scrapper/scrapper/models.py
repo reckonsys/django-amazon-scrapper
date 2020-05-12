@@ -66,7 +66,7 @@ class Product(BaseModel):
         unique_together = ('asin', 'region')
 
     def __str__(self):
-        return f'[{self.asin}] {self.title} ({self.get_region_display()})'
+        return f'[{self.asin} - {self.get_region_display()}] {self.title}'
 
 
 class Scrape(BaseModel):
