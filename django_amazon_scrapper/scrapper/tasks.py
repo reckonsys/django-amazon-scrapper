@@ -45,8 +45,13 @@ def init_product(product_id):
         product.save()
         return
 
-    product.status = ProductStatus.VALID
     parser = product.parser.ProductParser(response.text)
+    if parser.title is None:
+        product.status = ProductStatus.INVALID
+        product.save()
+        return
+
+    product.status = ProductStatus.VALID
     product.price = parser.price
     product.question_count = parser.question_count
     product.rating = parser.rating
