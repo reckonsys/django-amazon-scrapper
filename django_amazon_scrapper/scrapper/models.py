@@ -56,11 +56,11 @@ class Product(BaseModel):
     def reviews_url(self, page_number=1):
         return f'{self.prefix}/product-reviews/{self.asin_id}?pageNumber={page_number}&sortBy=recent'  # noqa: E501
 
-    def ask_url(self, page_number=1):
+    def questions_url(self, page_number=1):
         return f'{self.prefix}/ask/questions/asin/{self.asin_id}/{page_number}?sort=SUBMIT_DATE'  # noqa: E501
 
-    def question_url(self, question_id):
-        return f'{self.prefix}/ask/questions/{question_id}'
+    def answers_url(self, question_id, page_number=1):
+        return f'{self.prefix}/ask/questions/{question_id}/{page_number}?sort=SUBMIT_DATE'  # noqa: E501
 
     class Meta:
         unique_together = ('asin', 'region')
@@ -107,14 +107,16 @@ class Review(BaseModel):
 
 
 class Question(BaseModel):
+    answer_count = IntegerField()
     date = DateField()
     id = CharField(max_length=20, primary_key=True)
     product = ForeignKey(Product, related_name='questions', on_delete=CASCADE)
     profile = ForeignKey(Profile, related_name='questions', on_delete=CASCADE)
     text = TextField()
+    vote_count = IntegerField()
 
-    def question_url(self):
-        return self.product.question_url(self.id)
+    def answers_url(self, page_number=1):
+        return self.product.answers_url(self.id, page_number)
 
     def __str__(self):
         return f'[{self.id}] {self.text}'
@@ -126,6 +128,7 @@ class Answer(BaseModel):
     profile = ForeignKey(Profile, related_name='answers', on_delete=CASCADE)
     question = ForeignKey(Question, related_name='answers', on_delete=CASCADE)
     text = TextField()
+    vote_count = IntegerField()
 
     def __str__(self):
         return f'[{self.id}] {self.text}'

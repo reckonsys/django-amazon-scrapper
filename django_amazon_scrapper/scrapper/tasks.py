@@ -82,6 +82,7 @@ def scrape_reviews(scrape_id):
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status_reviews = ScrapeStatus.SCRAPPING
     scrape.save()
+    print("SCRAPE URL", scrape.product.questions_url())
 
 
 @shared_task
