@@ -33,7 +33,7 @@ def init_asin(asin_id):
 @shared_task
 def init_product(product_id):
     '''
-    initialize Asin Model
+    initialize Product Model
     '''
     product = Product.objects.get(id=product_id)
     product.status = ProductStatus.VALIDATING
@@ -64,7 +64,7 @@ def init_product(product_id):
 @shared_task
 def init_scrape(scrape_id):
     '''
-    initialize Asin Model
+    initialize Scrape Model
     '''
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status = ScrapeStatus.SCRAPPING
