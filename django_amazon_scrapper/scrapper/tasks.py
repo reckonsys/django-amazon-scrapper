@@ -84,6 +84,11 @@ def scrape_reviews(scrape_id):
     scrape = Scrape.objects.get(id=scrape_id)
     scrape.status_reviews = ScrapeStatus.SCRAPPING
     scrape.save()
+
+    def _completed():
+        scrape.status_reviews = ScrapeStatus.COMPLETED
+        scrape.save()
+
     for page_number in range(1, MAX_REVIEW_PAGES):
         url = scrape.product.reviews_url(page_number)
         response = fetch(url)
@@ -94,12 +99,9 @@ def scrape_reviews(scrape_id):
             return
 
         parser = scrape.product.parser.ReviewListParser(response.text)
-
         for review in parser.reviews:
             if Review.objects.filter(id=review.id).exists():
-                scrape.status_reviews = ScrapeStatus.COMPLETED
-                scrape.save()
-                return
+                return _completed()
 
             profile, _ = Profile.objects.get_or_create(id=review.profile_id)
             profile.name = review.profile_name
@@ -109,12 +111,9 @@ def scrape_reviews(scrape_id):
                 rating=review.rating, text=review.text, title=review.title)
 
         if parser.is_final:
-            scrape.status_reviews = ScrapeStatus.COMPLETED
-            scrape.save()
-            return
+            return _completed()
 
-    scrape.status_reviews = ScrapeStatus.COMPLETED
-    scrape.save()
+    _completed()
 
 
 @shared_task
