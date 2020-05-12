@@ -107,6 +107,9 @@ class Question(BaseModel):
     profile = ForeignKey(Profile, related_name='questions', on_delete=CASCADE)
     text = TextField()
 
+    def question_url(self):
+        return self.product.question_url(self.id)
+
     def __str__(self):
         return f'[{self.id}] {self.text}'
 
