@@ -122,13 +122,12 @@ class ProfileParser(Parser):
 
 
 class ReviewParser(Parser):
-
-    sel_profile_name = '.a-profile-name'
+    sel_date = '.review-date'
     sel_profile_id = '.a-profile'
+    sel_profile_name = '.a-profile-name'
     sel_rating = '.review-rating span'
     sel_text = '.review-text span'
     sel_title = '.review-title span'
-    sel_date = '.review-date'
 
     @property
     def id(self):
@@ -160,12 +159,13 @@ class ReviewParser(Parser):
 
 
 class ReviewListParser(Parser, ListMixin):
-    max_pages = MAX_REVIEW_PAGES
     count_selector = '#filter-info-section span'
+    max_pages = MAX_REVIEW_PAGES
+    sel_review = '.review'
 
     @property
     def reviews(self):
-        return [ReviewParser(selector) for selector in self.selector.css('.review')]  # noqa: E501
+        return [ReviewParser(selector) for selector in self.selector.css(self.sel_review)]  # noqa: E501
 
 
 class QuestionParser(Parser):
@@ -188,8 +188,8 @@ class QuestionParser(Parser):
 
 
 class QuestionListParser(Parser, ListMixin):
-    max_pages = MAX_QUESTION_PAGES
     count_selector = '.a-section.askPaginationHeaderMessage span'
+    max_pages = MAX_QUESTION_PAGES
 
     @property
     def questions(self):
@@ -216,8 +216,8 @@ class AnswerParser(Parser):
 
 
 class AnswerListParser(Parser, ListMixin):
-    max_pages = MAX_ANSWER_PAGES
     count_selector = '.a-spacing-large.a-color-secondary'
+    max_pages = MAX_ANSWER_PAGES
 
     @property
     def answers(self):
